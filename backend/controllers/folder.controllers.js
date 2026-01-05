@@ -7,7 +7,7 @@ const mongoose = require("mongoose")
  * Create new folder (root or child)
  */
 const createFolder = asyncHandler(async (req, res) => {
-    console.log("inside create folder" )
+ // console.log("inside create folder" )
     const { name, parentId, isPublic } = req.body
 
     if (!name) {
@@ -29,15 +29,17 @@ const createFolder = asyncHandler(async (req, res) => {
             _id: parentId,
             owner : req.user._id
         })
+        console.log("DEBUG: parentFolder Object keys:", Object.keys(parentFolder.toObject ? parentFolder.toObject() : parentFolder));
+        console.log("parentFolder name check: >>>" + parentFolder.name + "<<<");
         if (!parentFolder) {
             const error = new Error("parent folder not found")
             error.statusCode = 404
             throw error
         }
-        console.log(" parent folder owner ", parentFolder.owner )
-        console.log(" parent folder owner ", parentFolder.owner..toString( ))
+        console.log(" parent folder owner ", parentFolder.owner.toString( ))
+        console.log(" current user ", req.user.toString())
 
-        if (parentFolder.owner.toString() !== owner.toString() && !parentFolder.isPublic) {
+        if (parentFolder.owner.toString != req.user.toString()) {
             const error = new Error("You don't have permission to create folder in this parent")
             error.statusCode = 403
             throw error
