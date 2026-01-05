@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken")
 const  User = require("../models/user.model.js")
 
 const verifyJWT = asyncHandler(async (req, _, next) => {
+    console.log("inside verifyJWT ")
     try {
         const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "")
         if (!token) {
@@ -22,6 +23,7 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
         }
 
         req.user = user;
+        console.log("currently verified user " , req.user.name , " id " ,  req.user._id)
         next()
     } catch (err) {
         const error = new Error(`${err?.message}` || "Invalid access token")

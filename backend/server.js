@@ -5,6 +5,7 @@ const cors = require("cors");
 const globalErrorHandler = require("./middleware/errorMiddleware");
 const app = express()
 const userRouter = require("./routes/user.routes");
+const folderRouter = require("./routes/folder.routes");
 const loggerMiddleware = require("./middleware/logmiddleware");
 const cookieParser = require('cookie-parser');
 app.use(cors({
@@ -41,6 +42,7 @@ app.get("/test", (req, res) => {
 })
 
 app.use("/user" , userRouter)
+app.use("/folder", folderRouter)
 app.use(globalErrorHandler)
 
 app.listen(PORT, () => {
