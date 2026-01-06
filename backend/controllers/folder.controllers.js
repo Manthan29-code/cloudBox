@@ -120,6 +120,7 @@ const getFoldersByParent = asyncHandler(async (req, res) => {
 
     return res.status(200).json({ success: true,  folders})
 })
+
 const getRootFolders = asyncHandler(async (req, res) => {
     console.log("inside get root folder")
     const userId = req.user._id;
@@ -226,7 +227,7 @@ const deleteFolder = asyncHandler(async (req, res) => {
 
 
     const folder = await Folder.findById(id)
-
+    console.log("folder  found with provided id " , folder.name)
     if (!folder) {
         const error = new Error("Folder not found");
         error.statusCode = 404
@@ -303,6 +304,6 @@ const deleteChildrenRecursively = async (folderId) => {
 // }
 
 
-module.exports = { createFolder, getFoldersByParent, getRootFolders, updateFolder, deleteFolder, deleteChildrenRecursively }
+module.exports = { createFolder, getFoldersByParent, getRootFolders, updateFolder, deleteFolder, deleteFolder }
 
 
