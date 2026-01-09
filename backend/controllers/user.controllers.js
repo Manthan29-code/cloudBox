@@ -1,6 +1,6 @@
-const User = require('../models/user.model.js')
-const asyncHandler = require('../middleware/asyncHandler.js');
-const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/coludinary.utils');
+const User = require('../models/user.model')
+const asyncHandler = require('../middleware/asyncHandler');
+const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinary.utils');
 // const jwt = require("jsonwebtoken")
 
 const createUser = asyncHandler(

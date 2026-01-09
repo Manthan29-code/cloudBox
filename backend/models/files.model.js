@@ -24,11 +24,6 @@ const fileSchema = new mongoose.Schema(
             default: null
         },
 
-        thumbnailUrl: {
-            type: String,
-            default: null
-        },
-
         mimeType: {
             type: String,
             required: true

@@ -74,11 +74,25 @@ const deleteFromCloudinary = async (url) => {
     }
 }
 
+const deleteFileFromCloudinary = async (publicId) => {
+    try {
+        if (!publicId) return null
+
+        const result = await cloudinary.uploader.destroy(publicId)
+
+        console.log("Cloudinary delete result:", result)
+        return result
+    } catch (error) {
+        console.log("cloudinary delete error " , error)
+        const err = new Error(error.message)
+        error.statusCode = error.http_code
+        throw err
+    }
+}
+
 module.exports = {
     cloudinary,
     uploadToCloudinary,
-    deleteFromCloudinary
+    deleteFromCloudinary, 
+    deleteFileFromCloudinary
 };
-
-// secure_url https://res.cloudinary.com/djfqwpuzh/image/upload/v1767542919/profile_pics/bqrvekboifmmnagxkgil.png
-// public id profile_pics / bqrvekboifmmnagxkgil
