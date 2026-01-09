@@ -32,6 +32,7 @@ const Navbar = () => {
             
             {user ? (
               <div className="flex items-center gap-4">
+                <Link to="/dashboard" className="text-gray-600 hover:text-black font-medium transition-colors">Dashboard</Link>
                 <Link to="/profile" className="flex items-center gap-2 text-gray-600 hover:text-black font-medium transition-colors">
                   {user.profilePic ? (
                     <img src={user.profilePic} alt="Profile" className="w-8 h-8 rounded-full object-cover border border-gray-200" />
@@ -72,6 +73,7 @@ const Navbar = () => {
             
             {user ? (
               <>
+                <Link to="/dashboard" className="text-gray-600 hover:text-black font-medium" onClick={() => setIsOpen(false)}>Dashboard</Link>
                 <Link to="/profile" className="flex items-center gap-2 text-gray-600 hover:text-black font-medium" onClick={() => setIsOpen(false)}>
                   <FaUserCircle /> Profile
                 </Link>
