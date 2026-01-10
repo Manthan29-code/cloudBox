@@ -31,13 +31,14 @@ const fileFilter = (req, file, cb) => {
     }
     console.log("file mintyoe " , file.mimetype)
     console.log("file ext " , ext)
-    // allow only doc & pdf
-    if (ext === ".pdf" || ext === ".doc") {
-        
+    // allow only doc & pdf and .docx
+    const allow = [".pdf", ".doc", ".docx"]
+
+    if (allow.includes(ext)) {
         return cb(null, true)
     }
 
-    const error = new Error("Only PDF and DOC files allowed")
+    const error = new Error(`Only ${allow.join(", ")} files allowed`)
     error.statusCode = 400
     cb(error, false)
 }

@@ -249,4 +249,38 @@ const deleteFile = asyncHandler(async (req, res) => {
     })
 })
 
-module.exports = { uploadFile, getFilesByFolder, getFileById, updateFileMetadata, deleteFile }       
+const getUserFileStats = asyncHandler(async (req, res) => {
+    const userId = req.user._id
+
+    const stats = await File.aggregate([
+        { $match: { owner: userId } },
+        {
+            $group: {
+                _id: null,
+                totalFiles: { $sum: 1 },
+                totalSize: { $sum: '$size' },
+                avgSize: { $avg: '$size' }
+            }
+        }
+    ])
+
+    const mimeTypeStats = await File.aggregate([
+        { $match: { owner: userId } },
+        {
+            $group: {
+                _id: '$mimeType',
+                count: { $sum: 1 },
+                totalSize: { $sum: '$size' }
+            }
+        },
+        { $sort: { count: -1 } }
+    ])
+
+    res.status(200).json({
+        success: true,
+        stats: stats[0] || { totalFiles: 0, totalSize: 0, avgSize: 0 },
+        mimeTypeBreakdown: mimeTypeStats
+    })
+}
+)
+module.exports = { uploadFile, getFilesByFolder, getFileById, updateFileMetadata, deleteFile, getUserFileStats }       
