@@ -9,7 +9,7 @@ import DashboardPage from './pages/DashboardPage';
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="max-h-screen bg-gray-50">
         <Navbar />
         <Routes>
           <Route path="/" element={<LandingPage />} />

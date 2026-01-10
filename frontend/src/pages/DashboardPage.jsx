@@ -32,9 +32,11 @@ const DashboardPage = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isFilePreviewOpen, setIsFilePreviewOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // Mobile Stats modal
+  const [activeView, setActiveView] = useState('files'); // 'files' | 'stats'
   const [previewFile, setPreviewFile] = useState(null);
 
   // Context Menu State: { id, type: 'folder' | 'file', x, y }
+
 
   const [contextMenu, setContextMenu] = useState(null); 
   const [renamingId, setRenamingId] = useState(null); // format: { type: 'folder'|'file', id: string }
@@ -55,11 +57,15 @@ const DashboardPage = () => {
         if (folderId) {
             dispatch(getFolderContents(folderId));
             dispatch(getFilesByFolder(folderId));
+            setActiveView('files'); // Reset view when navigating to a folder
         } else {
-            dispatch(clearFiles()); // Explicitly clear files when at root
+            dispatch(getRootFolders()); // Restore root folder fetching
+            dispatch(setCurrentFolder(null));
+            dispatch(getFilesByFolder('root')); // Fetch files at root
         }
     }
   }, [dispatch, folderId, user]);
+
 
 //     }
 //   }, [dispatch, folderId, user]);
@@ -178,19 +184,27 @@ const DashboardPage = () => {
         {/* Sidebar */}
         <aside className="hidden md:flex w-64 flex-col gap-6 shrink-0">
             {/* Navigation Links */}
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex-1">
+             <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 h-full">
                 <div className="space-y-1">
-                    <Link to="/dashboard" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium ${!folderId ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                    <button 
+                        onClick={() => { setActiveView('files'); if (folderId) navigate('/dashboard'); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-left ${activeView === 'files' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
                         <FaHome /> My Drive
-                    </Link>
+                    </button>
+                    
+                     <button 
+                        onClick={() => setActiveView('stats')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-left ${activeView === 'stats' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                        <FaChartPie /> Storage Analysis
+                    </button>
+
                     <div className="px-4 py-3 text-gray-400 text-sm font-medium flex items-center gap-3 cursor-not-allowed">
                         <span className="w-5 flex justify-center"><FaFolderOpen /></span> Shared (Coming Soon)
                     </div>
                 </div>
             </div>
-            
-            {/* File Stats (Desktop Only) */}
-            <FileStats />
         </aside>
 
         {/* Main Content */}
@@ -221,13 +235,8 @@ const DashboardPage = () => {
                      {/* Upload File Button - Only if in a folder */}
                     <button 
                         onClick={() => setIsUploadModalOpen(true)}
-                        disabled={!folderId}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md text-sm border 
-                            ${!folderId 
-                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed shadow-none' 
-                                : 'bg-white text-black border-gray-200 hover:bg-gray-50 hover:shadow-lg'
-                            }`}
-                        title={!folderId ? "Open a folder to upload files" : "Upload file"}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md text-sm border bg-white text-black border-gray-200 hover:bg-gray-50 hover:shadow-lg"
+                        title="Upload file"
                     >
                         <FaCloudUploadAlt /> Upload File
                     </button>
@@ -253,6 +262,15 @@ const DashboardPage = () => {
             {/* Content Area */}
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex-1 min-h-[500px]">
+                {activeView === 'stats' ? (
+                     <div className="h-full w-full">
+                        <h2 className="text-xl font-bold mb-6">Storage Analysis</h2>
+                        <div className="h-full">
+                            <FileStats />
+                        </div>
+                    </div>
+                ) : (
+                <>
                 {isLoading && folders.length === 0 && files.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-gray-400 flex-col gap-4">
                         <div className="animate-spin h-8 w-8 border-4 border-gray-200 border-t-black rounded-full"></div>
@@ -376,10 +394,13 @@ const DashboardPage = () => {
                              </div>
                         )}
                     </div>
+                 )}
+                 </>
                 )}
             </div>
         </main>
       </div>
+
 
       {/* Modals */}
       <CreateFolderModal 
@@ -391,7 +412,10 @@ const DashboardPage = () => {
       
       <UploadFileModal
         isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}/>
+        onClose={() => setIsUploadModalOpen(false)}
+        onUpload={handleUploadFile}
+        parentId={folderId}
+      />
       
        {isStatsModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -406,11 +430,6 @@ const DashboardPage = () => {
             </div>
         </div>
       )}
-
-      {/* Context Menu */}
-        <loadFile
-        parentId={folderId}
-      />
 
       <FilePreviewModal
         isOpen={isFilePreviewOpen}
