@@ -94,9 +94,26 @@ export const getFile = createAsyncThunk(
 const initialState = {
   files: [],
   currentFile: null,
+  stats: null, // Add stats to state
   isLoading: false,
   error: null,
-};
+}; // Line 97 in original file (based on read_file output)
+
+// Get User File Stats
+export const getUserFileStats = createAsyncThunk(
+  'file/getUserFileStats',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/file/stats');
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to fetch file stats';
+      // Optional: toast.error(message); // Often stats failure shouldn't block UI
+      return rejectWithValue(message);
+    }
+  }
+);
+
 
 const fileSlice = createSlice({
   name: 'file',
@@ -176,9 +193,15 @@ const fileSlice = createSlice({
       // Get Single File
       .addCase(getFile.fulfilled, (state, action) => {
         state.currentFile = action.payload.file;
+      })
+
+      // Get File Stats
+      .addCase(getUserFileStats.fulfilled, (state, action) => {
+          state.stats = action.payload;
       });
   },
 });
+
 
 export const { clearFiles, setCurrentFile } = fileSlice.actions;
 export default fileSlice.reducer;

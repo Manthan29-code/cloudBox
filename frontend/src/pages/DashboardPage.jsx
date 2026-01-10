@@ -2,19 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getRootFolders, getFolderContents, createFolder, deleteFolder, updateFolder, setCurrentFolder } from '../store/slices/folderSlice';
-import { getFilesByFolder, deleteFile, updateFile, uploadFile } from '../store/slices/fileSlice';
+import { getFilesByFolder, deleteFile, updateFile, uploadFile, clearFiles } from '../store/slices/fileSlice';
 import Navbar from '../components/Navbar';
 import CreateFolderModal from '../components/CreateFolderModal';
 import UploadFileModal from '../components/UploadFileModal';
 import FilePreviewModal from '../components/FilePreviewModal';
+import FileStats from '../components/FileStats';
 import { 
     FaFolder, FaFolderOpen, FaPlus, FaTrash, FaPen, FaEllipsisV, 
     FaHome, FaChevronRight, FaGlobe, FaFile, FaFileImage, 
-    FaFilePdf, FaFileWord, FaFileExcel, FaDownload, FaCloudUploadAlt 
+    FaFilePdf, FaFileWord, FaFileExcel, FaDownload, FaCloudUploadAlt, FaChartPie, FaTimes 
 } from 'react-icons/fa';
 import { useForm } from 'react-hook-form';
 
 const DashboardPage = () => {
+
   const { folderId } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -29,9 +31,11 @@ const DashboardPage = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isFilePreviewOpen, setIsFilePreviewOpen] = useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // Mobile Stats modal
   const [previewFile, setPreviewFile] = useState(null);
 
   // Context Menu State: { id, type: 'folder' | 'file', x, y }
+
   const [contextMenu, setContextMenu] = useState(null); 
   const [renamingId, setRenamingId] = useState(null); // format: { type: 'folder'|'file', id: string }
   
@@ -52,14 +56,13 @@ const DashboardPage = () => {
             dispatch(getFolderContents(folderId));
             dispatch(getFilesByFolder(folderId));
         } else {
-            dispatch(getRootFolders());
-            dispatch(setCurrentFolder(null));
-            // Root level files not supported typically based on prompt, so we might not fetch files or clear them
-            // But if there were any, we'd need a root fetch. 
-            // For now, assuming no root files as per prompt "root level file creation is not allowd"
+            dispatch(clearFiles()); // Explicitly clear files when at root
         }
     }
   }, [dispatch, folderId, user]);
+
+//     }
+//   }, [dispatch, folderId, user]);
 
   if (!user) return null; 
 
@@ -173,8 +176,9 @@ const DashboardPage = () => {
       <div className="flex flex-1 container mx-auto px-4 py-6 gap-6">
         
         {/* Sidebar */}
-        <aside className="hidden md:block w-64 flex-shrink-0">
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 h-full">
+        <aside className="hidden md:flex w-64 flex-col gap-6 shrink-0">
+            {/* Navigation Links */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex-1">
                 <div className="space-y-1">
                     <Link to="/dashboard" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium ${!folderId ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
                         <FaHome /> My Drive
@@ -184,9 +188,13 @@ const DashboardPage = () => {
                     </div>
                 </div>
             </div>
+            
+            {/* File Stats (Desktop Only) */}
+            <FileStats />
         </aside>
 
         {/* Main Content */}
+
         <main className="flex-1 flex flex-col min-w-0">
             
             {/* Toolbar */}
@@ -230,10 +238,20 @@ const DashboardPage = () => {
                     >
                         <FaPlus /> New Folder
                     </button>
+                    
+                    {/* Mobile Stats Toggle */}
+                    <button 
+                        onClick={() => setIsStatsModalOpen(true)}
+                        className="md:hidden flex items-center justify-center p-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+                        title="Storage Stats"
+                    >
+                        <FaChartPie size={18} />
+                    </button>
                 </div>
             </div>
 
             {/* Content Area */}
+
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex-1 min-h-[500px]">
                 {isLoading && folders.length === 0 && files.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-gray-400 flex-col gap-4">
@@ -373,8 +391,24 @@ const DashboardPage = () => {
       
       <UploadFileModal
         isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        onUpload={handleUploadFile}
+        onClose={() => setIsUploadModalOpen(false)}/>
+      
+       {isStatsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden relative shadow-2xl animate-fade-in">
+                  <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                     <h3 className="font-bold text-lg">Storage Details</h3>
+                     <button onClick={() => setIsStatsModalOpen(false)} className="p-1 rounded-full hover:bg-gray-200 text-gray-500"><FaTimes /></button>
+                  </div>
+                  <div className="p-4">
+                      <FileStats />
+                  </div>
+            </div>
+        </div>
+      )}
+
+      {/* Context Menu */}
+        <loadFile
         parentId={folderId}
       />
 
