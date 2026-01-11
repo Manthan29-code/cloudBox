@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getRootFolders, getFolderContents, createFolder, deleteFolder, updateFolder, setCurrentFolder } from '../store/slices/folderSlice';
 import { getFilesByFolder, deleteFile, updateFile, uploadFile, clearFiles } from '../store/slices/fileSlice';
-import Navbar from '../components/Navbar';
+// import Navbar from '../components/Navbar';
 import CreateFolderModal from '../components/CreateFolderModal';
 import UploadFileModal from '../components/UploadFileModal';
 import FilePreviewModal from '../components/FilePreviewModal';
@@ -61,14 +61,12 @@ const DashboardPage = () => {
         } else {
             dispatch(getRootFolders()); // Restore root folder fetching
             dispatch(setCurrentFolder(null));
-            dispatch(getFilesByFolder('root')); // Fetch files at root
+            dispatch(clearFiles());
+            // dispatch(getFilesByFolder(null)); // Fetch files at root
         }
     }
   }, [dispatch, folderId, user]);
 
-
-//     }
-//   }, [dispatch, folderId, user]);
 
   if (!user) return null; 
 
@@ -235,8 +233,12 @@ const DashboardPage = () => {
                      {/* Upload File Button - Only if in a folder */}
                     <button 
                         onClick={() => setIsUploadModalOpen(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md text-sm border bg-white text-black border-gray-200 hover:bg-gray-50 hover:shadow-lg"
-                        title="Upload file"
+                        disabled={!folderId}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md text-sm border ${!folderId
+                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-60 shadow-none'
+                                : 'bg-white text-black border-gray-200 hover:bg-gray-50 hover:shadow-lg'
+                            }`}
+                        title={!folderId ? "Please open a folder to upload files" : "Upload file"}
                     >
                         <FaCloudUploadAlt /> Upload File
                     </button>
