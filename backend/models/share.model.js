@@ -20,6 +20,8 @@ const shareSchema = new mongoose.Schema(
             required: true
         },
 
+        
+
         token: {
             type: String,
             required: true,
