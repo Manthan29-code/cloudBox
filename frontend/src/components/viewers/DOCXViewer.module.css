@@ -1,0 +1,254 @@
+/* DOCXViewer CSS Module - Responsive Styles */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; 
+  align-items: center; 
+  height: 100%;
+  width: 100%;
+  /* overflow-x: scroll; */
+  background-color: #111827; /* bg-gray-900 */
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  height: 3rem;
+  width: 3rem;
+  border: 4px solid #4b5563; /* border-gray-600 */
+  border-top-color: white;
+  border-radius: 9999px;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingText {
+  color: #9ca3af; /* text-gray-400 */
+}
+
+.errorContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background-color: #111827;
+}
+
+.errorBox {
+  text-align: center;
+  padding: 2rem;
+  background-color: #fef2f2; /* bg-red-50 */
+  border-radius: 0.75rem;
+  border: 1px solid #fecaca; /* border-red-200 */
+}
+
+.errorTitle {
+  color: #dc2626; /* text-red-600 */
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.errorMessage {
+  font-size: 0.875rem;
+  color: #4b5563; /* text-gray-600 */
+}
+
+.contentWrapper {
+  flex: 1;
+  overflow: auto;
+  padding: 0.5rem; /* p-2 */
+}
+
+@media (min-width: 640px) {
+  .contentWrapper {
+    padding: 1rem; /* sm:p-4 */
+  }
+}
+
+@media (min-width: 768px) {
+  .contentWrapper {
+    padding: 1.5rem; /* md:p-6 */
+  }
+}
+
+.documentContainer {
+  max-width: 56rem; /* max-w-4xl */
+  margin-left: auto;
+  margin-right: auto;
+  background-color: white;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* shadow-2xl */
+  border-radius: 0.5rem;
+  /* overflow: hidden; */
+  overflow-x: scroll;
+}
+
+.docxWrapper {
+  min-height: 200px;
+  width : 100%;
+  padding: 12px;
+  overflow-x: scroll;
+}
+
+/* Responsive padding for larger screens */
+@media (min-width: 640px) {
+  .docxWrapper {
+    padding: 10px;
+    overflow-x: scroll;
+  }
+
+.container {
+  overflow-x: scroll;
+}
+}
+
+@media (min-width: 768px) {
+  .docxWrapper {
+    padding: 30px;
+    overflow-x: scroll;
+  }
+  .container {
+  overflow-x: scroll;
+}
+}
+
+@media (min-width: 1024px) {
+  .docxWrapper {
+    padding: 40px;
+  }
+}
+
+/* Global styles for DOCX content */
+.docxWrapper :global(.docx) {
+  background: white;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: scroll;
+}
+
+.docxWrapper :global(.docx-wrapper) {
+  background: white;
+  width: 100%;
+}
+
+.docxWrapper :global(section.docx) {
+  background: white;
+  padding: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  max-width: 100%;
+  overflow: scroll;
+}
+
+@media (min-width: 640px) {
+  .docxWrapper :global(section.docx) {
+    padding: 20px;
+  }
+}
+
+/* Tables - Responsive */
+.docxWrapper :global(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .docxWrapper :global(table) {
+    display: table;
+    white-space: normal;
+  }
+}
+
+.docxWrapper :global(table td),
+.docxWrapper :global(table th) {
+  border: 1px solid #ddd;
+  padding: 6px;
+  font-size: 13px;
+}
+
+@media (min-width: 640px) {
+  .docxWrapper :global(table td),
+  .docxWrapper :global(table th) {
+    padding: 8px;
+    font-size: 14px;
+  }
+}
+
+/* Images - Responsive */
+.docxWrapper :global(img) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Text - Prevent overflow on mobile */
+.docxWrapper :global(p),
+.docxWrapper :global(div),
+.docxWrapper :global(span) {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Font sizes - Smaller on mobile */
+.docxWrapper :global(p) {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (min-width: 640px) {
+  .docxWrapper :global(p) {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 768px) {
+  .docxWrapper :global(p) {
+    font-size: 16px;
+  }
+}
+
+/* Headings - Responsive */
+.docxWrapper :global(h1) {
+  font-size: 20px;
+}
+
+@media (min-width: 640px) {
+  .docxWrapper :global(h1) {
+    font-size: 24px;
+  }
+}
+
+@media (min-width: 768px) {
+  .docxWrapper :global(h1) {
+    font-size: 28px;
+  }
+}
+
+.docxWrapper :global(h2) {
+  font-size: 18px;
+}
+
+@media (min-width: 640px) {
+  .docxWrapper :global(h2) {
+    font-size: 20px;
+  }
+}

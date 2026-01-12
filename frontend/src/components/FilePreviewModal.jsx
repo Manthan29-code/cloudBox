@@ -1,93 +1,115 @@
-import React from 'react';
-import { FaTimes, FaDownload, FaFile, FaFileImage, FaFilePdf, FaFileWord, FaFileExcel, FaExternalLinkAlt } from 'react-icons/fa';
+import React, { useEffect } from 'react';
+import { FaTimes, FaDownload } from 'react-icons/fa';
+import PDFViewer from './viewers/PDFViewer';
+import DOCXViewer from './viewers/DOCXViewer';
+import ImageViewer from './viewers/ImageViewer';
 
 const FilePreviewModal = ({ isOpen, onClose, file }) => {
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !file) return null;
 
-  const getFileIcon = (mimeType) => {
-    if (mimeType?.startsWith('image/')) return <FaFileImage className="text-6xl text-gray-700" />;
-    if (mimeType === 'application/pdf') return <FaFilePdf className="text-6xl text-gray-700" />;
-    if (mimeType?.includes('word')) return <FaFileWord className="text-6xl text-gray-700" />;
-    if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet')) return <FaFileExcel className="text-6xl text-gray-700" />;
-    return <FaFile className="text-6xl text-gray-700" />;
+  // Determine file type
+  const isImage = file.mimeType?.startsWith('image/');
+  const isPDF = file.mimeType === 'application/pdf';
+  const isDOCX = file.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    file.mimeType?.includes('word') ||
+    file.originalName?.endsWith('.docx');
+
+  const handleDownload = () => {
+    // Create a temporary link to trigger download
+    const link = document.createElement('a');
+    link.href = file.cloudUrl;
+    link.download = file.originalName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const isImage = file.mimeType?.startsWith('image/');
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-        {/* Modal Container */}
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col overflow-hidden relative animate-fade-in">
-        
-        {/* Header */}
-        <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center shrink-0">
-          <h3 className="text-lg font-bold text-gray-900 truncate max-w-md" title={file.originalName}>
+    <div className="fixed inset-0 z-50 flex flex-col bg-black">
+      {/* Header Bar */}
+      <div className="bg-gray-900 px-4 py-3 flex justify-between items-center border-b border-gray-700 flex-shrink-0">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <h3 className="text-white font-semibold text-lg truncate" title={file.originalName}>
             {file.originalName}
           </h3>
-          <div className="flex items-center gap-2">
-            <a 
-                href={file.cloudUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="p-2 text-gray-500 hover:text-black hover:bg-gray-200 rounded-full transition-colors"
-                title="Open in new tab"
-            >
-                <FaExternalLinkAlt />
-            </a>
-            <button 
-                onClick={onClose} 
-                className="p-2 text-gray-500 hover:text-black hover:bg-gray-200 rounded-full transition-colors"
-            >
-                <FaTimes size={20} />
-            </button>
+          <div className="hidden sm:flex items-center gap-4 text-sm text-gray-400">
+            <span>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+            <span className="hidden md:inline">{file.mimeType}</span>
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center p-4">
-             {isImage ? (
-                 <img 
-                    src={file.cloudUrl} 
-                    alt={file.originalName} 
-                    className="max-w-full max-h-full object-contain rounded shadow-sm"
-                 />
-             ) : (
-                 <div className="text-center p-10 bg-white rounded-xl shadow-sm">
-                     <div className="flex justify-center mb-4">
-                        {getFileIcon(file.mimeType)}
-                     </div>
-                     <p className="text-gray-500 mb-6">Preview not available for this file type.</p>
-                     <a 
-                        href={file.cloudUrl} 
-                        download
-                        className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-black hover:bg-gray-800 shadow-md transition-all"
-                     >
-                        <FaDownload className="mr-2" /> Download File
-                     </a>
-                 </div>
-             )}
-        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Download Button */}
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
+            title="Download File"
+          >
+            <FaDownload />
+            <span className="hidden sm:inline">Download</span>
+          </button>
 
-        {/* Footer / Details */}
-        <div className="bg-white border-t border-gray-100 px-6 py-4 shrink-0 flex flex-wrap gap-x-8 gap-y-2 text-sm text-gray-500">
-            <div className="flex flex-col">
-                <span className="text-xs font-semibold text-gray-400 uppercase">Size</span>
-                <span className="font-medium text-gray-900">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-            </div>
-            <div className="flex flex-col">
-                <span className="text-xs font-semibold text-gray-400 uppercase">Type</span>
-                <span className="font-medium text-gray-900">{file.mimeType || 'Unknown'}</span>
-            </div>
-            <div className="flex flex-col">
-                <span className="text-xs font-semibold text-gray-400 uppercase">Uploaded</span>
-                <span className="font-medium text-gray-900">{new Date(file.createdAt).toLocaleDateString()}</span>
-            </div>
-             <div className="flex flex-col">
-                <span className="text-xs font-semibold text-gray-400 uppercase">Visibility</span>
-                <span className={`font-medium ${file.isPublic ? 'text-green-600' : 'text-gray-900'}`}>{file.isPublic ? 'Public' : 'Private'}</span>
-            </div>
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="p-2 text-white hover:bg-gray-800 rounded-lg transition-colors"
+            title="Close (Esc)"
+          >
+            <FaTimes size={24} />
+          </button>
         </div>
+      </div>
 
+      {/* Viewer Area */}
+      <div className="flex-1 overflow-hidden">
+        {isPDF && <PDFViewer fileUrl={file.cloudUrl} fileName={file.originalName} />}
+        {isDOCX && <DOCXViewer fileUrl={file.cloudUrl} fileName={file.originalName} />}
+        {isImage && <ImageViewer fileUrl={file.cloudUrl} fileName={file.originalName} />}
+
+        {/* Fallback for unsupported file types */}
+        {!isPDF && !isDOCX && !isImage && (
+          <div className="flex items-center justify-center h-full bg-gray-900">
+            <div className="text-center p-8 bg-gray-800 rounded-xl border border-gray-700">
+              <p className="text-white font-medium mb-4">Preview not available for this file type</p>
+              <p className="text-gray-400 mb-6">Please download the file to view it</p>
+              <button
+                onClick={handleDownload}
+                className="inline-flex items-center justify-center px-6 py-3 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                <FaDownload className="mr-2" />
+                Download File
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer Info Bar */}
+      <div className="bg-gray-900 px-4 py-2 border-t border-gray-700 flex-shrink-0">
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center gap-4">
+            <span>Uploaded: {new Date(file.createdAt).toLocaleDateString()}</span>
+            <span className={file.isPublic ? 'text-green-400' : 'text-gray-400'}>
+              {file.isPublic ? 'Public' : 'Private'}
+            </span>
+          </div>
+          <div className="text-gray-600">
+            Press ESC to close
+          </div>
+        </div>
       </div>
     </div>
   );
