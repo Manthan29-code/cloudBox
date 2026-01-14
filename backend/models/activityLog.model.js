@@ -3,7 +3,13 @@ const mongoose = require("mongoose")
 
 const activityLogSchema = new mongoose.Schema(
     {
-        userId: {
+        shareId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Share",
+            required: true
+        },
+
+        accessedBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: true
@@ -11,32 +17,14 @@ const activityLogSchema = new mongoose.Schema(
 
         action: {
             type: String,
-            required: true
-            // examples: upload, delete, share, download
-        },
-
-        resourceId: {
-            type: mongoose.Schema.Types.ObjectId,
+            enum: ["share" , "view", "download"],
             required: true
         },
 
-        resourceType: {
-            type: String,
-            enum: ["file", "folder"],
-            required: true
-        },
-
-        ipAddress: {
-            type: String,
-            default: null
-        },
-
-        metadata: {
-            type: Object,
-            default: {}
-        }
+        ipAddress: String,
+        userAgent: String
     },
     { timestamps: { createdAt: true, updatedAt: false } }
 )
-
-module.exports = mongoose.model("ActivityLog", activityLogSchema)
+const ActivityLog =  mongoose.model("ActivityLog", activityLogSchema)
+module.exports = ActivityLog
