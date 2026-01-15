@@ -48,8 +48,8 @@ const shareSchema = new mongoose.Schema(
     },
     { timestamps: true }
 )
-
-module.exports = mongoose.model("Share", shareSchema)
+const Share = mongoose.model("Share", shareSchema)
+module.exports = Share
 // for expiresAt input mechanism
 ```Frontend sends
 {
