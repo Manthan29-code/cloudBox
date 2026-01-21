@@ -1,6 +1,7 @@
 #txtx Files
 *.txt
 sharecontrollerdoc.txt
+logController.txt
 
 # Logs
 logs

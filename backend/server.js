@@ -8,6 +8,7 @@ const userRouter = require("./routes/user.routes");
 const folderRouter = require("./routes/folder.routes");
 const fileRouter = require("./routes/file.routes");
 const shareRouter = require("./routes/share.routes");
+const logsRouter = require("./routes/logActivity.routes");
 const loggerMiddleware = require("./middleware/logmiddleware");
 const cookieParser = require('cookie-parser');
 // const pdfProxyRouter = require('./routes/pdfViewr.routes');
@@ -50,6 +51,7 @@ app.use("/user" , userRouter)
 app.use("/folder", folderRouter)
 app.use("/file", fileRouter)
 app.use("/shares", shareRouter)
+app.use("/logs", shareRouter)
 // app.use(pdfProxyRouter)
 app.use(globalErrorHandler)
 

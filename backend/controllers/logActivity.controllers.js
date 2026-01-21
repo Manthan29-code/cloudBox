@@ -1,127 +1,254 @@
-# LOG SERVICE – Responsibilities
+// const Folder = require("../models/folder.model")
+const ActivityLog = require("../models/activityLog.model")
+const asyncHandler = require("../middleware/asyncHandler")
+const mongoose = require("mongoose")
+const Share = require("../models/share.model.js")
+const logService = require("../utils/logs.service.js")
 
-    > 
-> (Internal helper, NO API, only functions)
 
-### Purpose
 
-Central place to ** create and manage log records **
-    Called by:
+/**
+ * @desc    Get activity logs for a specific share
+ * @route   GET /logs/share/:shareId
+ * @access  Private (owner only)
+ */
+const getLogsByShare = asyncHandler(async (req, res) => {
+    const { shareId } = req.params
+    const { page, limit, action, startDate, endDate } = req.query
 
-- share controller
-    - download handler
-        - view handler
+    // Find share and verify ownership
+    const share = await Share.findById(shareId)
 
-            * * *
+    if (!share) {
+        const error = new Error("Share not found")
+        error.statusCode = 404
+        throw error
+    }
 
-## 1) Create Activity Log
+    // Check if user is the owner
+    if (share.createdBy.toString() !== req.user._id.toString()) {
+        const error = new Error("Unauthorized to view logs for this share")
+        error.statusCode = 403
+        throw error
+    }
 
-Triggered when:
+    // Get logs with filters
+    const result = await logService.getLogsByShareId(shareId, {
+        page: parseInt(page) || 1,
+        limit: parseInt(limit) || 20,
+        action,
+        startDate,
+        endDate
+    })
 
-- share created
-    - resource viewed
-        - file downloaded
+    res.status(200).json({
+        success: true,
+        data: result.logs,
+        pagination: result.pagination
+    })
+})
 
-Flow:
+/**
+ * @desc    Get all activity logs for current user
+ * @route   GET /logs/my-activity
+ * @access  Private
+ */
+const getMyActivityLogs = asyncHandler(async (req, res) => {
+    const { page, limit } = req.query
 
-1. receive:
+    const result = await logService.getLogsByUserId(req.user._id, {
+        page: parseInt(page) || 1,
+        limit: parseInt(limit) || 20
+    })
 
-- shareId
-    - accessedBy
-    - action
-    - ip
-    - userAgent
-2. validate required fields
-3. save log document
-4. return success
+    res.status(200).json({
+        success: true,
+        data: result.logs,
+        pagination: result.pagination
+    })
+})
 
-    * * *
+/**
+ * @desc    Get all logs for shares created by user(admin view)
+ * @route   GET/logs/my-shares-activity
+ * @access  Private
+*/
+const getMySharesActivity = asyncHandler(async (req, res) => {
+    const pageNum = parseInt(req.query.page) || 1
+    const limitNum = parseInt(req.query.limit) || 20
+    const skip = (pageNum - 1) * limitNum
 
-## 2) Batch Log(optional future)
 
-Purpose:
+    const result = await ActivityLog.aggregate([
+        // Join with shares
+        {
+            $lookup: {
+                from: "shares",
+                localField: "shareId",
+                foreignField: "_id",
+                as: "share"
+            }
+        },
+        { $unwind: "$share" },
 
-- bulk insert logs
-    - high traffic optimization
+        // Filter only shares created by logged-in user
+        {
+            $match: {
+                "share.createdBy": req.user._id
+            }
+        },
 
-Used when:
+        // Join with users
+        {
+            $lookup: {
+                from: "users",
+                localField: "accessedBy",
+                foreignField: "_id",
+                as: "accessedBy"
+            }
+        },
+        { $unwind: "$accessedBy" },
 
-- heavy view traffic
+        // SELECT REQUIRED FIELDS (replacement of populate select)
+        {
+            $project: {
+                _id: 1,
+                createdAt: 1,
 
-    * * *
+                // share fields
+                "share._id": 1,
+                "share.title": 1,
+                "share.slug": 1,
 
-## 3) Sanitize Log Data
+                // user fields
+                "accessedBy._id": 1,
+                "accessedBy.name": 1,
+                "accessedBy.email": 1
+            }
+        },
 
-Purpose:
+        // Sort latest first
+        { $sort: { createdAt: -1 } },
 
-- normalize IP
-    - clean userAgent
-        - prevent injection
+        // Pagination + total count
+        {
+            $facet: {
+                data: [
+                    { $skip: skip },
+                    { $limit: limitNum }
+                ],
+                totalCount: [
+                    { $count: "count" }
+                ]
+            }
+        }
+    ])
 
-            * * *
 
-## 4) Reusable Log Helpers
+    const logs = result[0].data
+    const total = result[0].totalCount[0]?.count || 0
 
-Examples:
+    res.status(200).json({
+        success: true,
+        data: logs,
+        pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total,
+            pages: Math.ceil(total / limitNum)
+        }
+    })
+})
 
-- format action names
-    - generate metadata
+/**
+ * @desc    Get aggregated analytics for user's shares
+ * @route   GET /logs/analytics/overview
+ * @access  Private
+ */
+const getOverviewAnalytics = asyncHandler(async (req, res) => {
+    // Find all shares created by user
+    const shares = await Share.find({ createdBy: req.user._id }).select("_id")
+    const shareIds = shares.map(share => share._id)
 
-        * * *
+    if (shareIds.length === 0) {
+        return res.status(200).json({
+            success: true,
+            data: {
+                totalShares: 0,
+                totalAccess: 0,
+                totalViews: 0,
+                totalDownloads: 0,
+                uniqueUsers: 0
+            }
+        })
+    }
 
-# LOG CONTROLLER – Responsibilities
+    // Get all logs for user's shares
+    const logs = await ActivityLog.find({ shareId: { $in: shareIds } })
 
-    > 
-> (Exposes APIs to frontend)
+    const analytics = {
+        totalShares: shares.length,
+        totalAccess: logs.length,
+        totalViews: logs.filter(log => log.action === "view").length,
+        totalDownloads: logs.filter(log => log.action === "download").length,
+        uniqueUsers: [...new Set(logs.map(log => log.accessedBy.toString()))].length,
+        recentActivity: logs.slice(0, 10).map(log => ({
+            action: log.action,
+            timestamp: log.createdAt,
+            shareId: log.shareId
+        }))
+    }
 
-* * *
+    res.status(200).json({
+        success: true,
+        data: analytics
+    })
+})
 
-## 1) Get Logs by Share
 
-Purpose:
+/**
+ * @desc    Export logs to CSV format
+ * @route   GET /logs/export/:shareId
+ * @access  Private (owner only)
+ */
+const exportLogsToCSV = asyncHandler(async (req, res) => {
+    const { shareId } = req.params
 
-- owner views activity
+    // Find share and verify ownership
+    const share = await Share.findById(shareId)
 
-Flow:
+    if (!share) {
+        const error = new Error("Share not found")
+        error.statusCode = 404
+        throw error
+    }
 
-1. validate owner
-2. check share belongs to owner
-3. fetch logs by shareId
-4. apply:
+    if (share.createdBy.toString() !== req.user._id.toString()) {
+        const error = new Error("Unauthorized to export logs for this share")
+        error.statusCode = 403
+        throw error
+    }
 
-- pagination
-    - filters(action, date)
-5. return data
+    // Get all logs for this share
+    const ActivityLog = require("../models/activityLog.model.js")
+    const logs = await ActivityLog.find({ shareId })
+        .populate("accessedBy", "name email")
+        .sort({ createdAt: -1 })
 
-    * * *
+    // Convert to CSV format
+    const csvHeader = "Timestamp,Action,User Name,User Email,IP Address,User Agent\n"
+    const csvRows = logs.map(log => {
+        return `${log.createdAt.toISOString()},${log.action},${log.accessedBy?.name || "N/A"},${log.accessedBy?.email || "N/A"},${log.ipAddress || "N/A"},${log.userAgent || "N/A"}`
+    }).join("\n")
 
-## 2) Get All Logs of User
+    const csv = csvHeader + csvRows
 
-Purpose:
+    // Set headers for CSV download
+    res.setHeader("Content-Type", "text/csv")
+    res.setHeader("Content-Disposition", `attachment; filename=share-logs-${shareId}.csv`)
 
-- admin / user analytics
+    res.status(200).send(csv)
+})
 
-Examples:
 
-- all activity by user
-    - audit trail
-
-        * * *
-
-## 3) Log Analytics(optional later)
-
-Purpose:
-
-- total views
-    - total downloads
-        - unique users
-            - last access
-
-                * * *
-
-## 4) Export Logs
-
-Purpose:
-
-- download CSV
-    - reports
+module.exports = { getLogsByShare, getMyActivityLogs, getMySharesActivity, getOverviewAnalytics, exportLogsToCSV }
