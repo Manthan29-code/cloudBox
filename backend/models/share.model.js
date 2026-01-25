@@ -51,22 +51,24 @@ const shareSchema = new mongoose.Schema(
 const Share = mongoose.model("Share", shareSchema)
 module.exports = Share
 // for expiresAt input mechanism
-```Frontend sends
-{
-    "hours": 2,
-        "minutes": 30
-}
-let expiresAt
+// ```
+// Frontend sends
+// {
+//     "hours": 2,
+//         "minutes": 30
+// }
+// let expiresAt
 
-if (req.body.expiresAt) {
-    expiresAt = new Date(req.body.expiresAt)
-} else {
-    const { hours = 0, minutes = 0, days = 0 } = req.body
+// if (req.body.expiresAt) {
+//     expiresAt = new Date(req.body.expiresAt)
+// } else {
+//     const { hours = 0, minutes = 0, days = 0 } = req.body
 
-    const ms =
-        days * 24 * 60 * 60 * 1000 +
-        hours * 60 * 60 * 1000 +
-        minutes * 60 * 1000
+//     const ms =
+//         days * 24 * 60 * 60 * 1000 +
+//         hours * 60 * 60 * 1000 +
+//         minutes * 60 * 1000
 
-    expiresAt = new Date(Date.now() + ms)
-}```
+//     expiresAt = new Date(Date.now() + ms)
+// }
+// ```

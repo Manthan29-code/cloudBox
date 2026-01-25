@@ -156,11 +156,19 @@ const getLogsByUserId = async (userId, options = {}) => {
 /**
  * Get analytics for a share
  */
-const getShareAnalytics = async (shareId) => {
+const getShareAnalytics = async (shareIdOrIds) => {
     try {
-        if (!shareId) throw new Error("shareId is required")
+        // Handle both single ID and array of IDs
+        const shareIds = Array.isArray(shareIdOrIds) ? shareIdOrIds : [shareIdOrIds]
 
-        const logs = await ActivityLog.find({ shareId })
+        if (shareIds.length === 0) {
+            throw new Error("shareId(s) required")
+        }
+
+        // Single query for all shares
+        const logs = await ActivityLog.find({
+            shareId: { $in: shareIds }
+        })
 
         let views = 0
         let downloads = 0
@@ -168,6 +176,7 @@ const getShareAnalytics = async (shareId) => {
         let users = new Set()
         let lastAccess = null
 
+        // Process all logs
         for (let log of logs) {
             if (!log.action || !log.accessedBy) continue
 
@@ -201,6 +210,7 @@ const getShareAnalytics = async (shareId) => {
         throw error
     }
 }
+
 
 const formatActionName = (action) => {
     const actionMap = {

@@ -170,6 +170,7 @@ const getOverviewAnalytics = asyncHandler(async (req, res) => {
     const shares = await Share.find({ createdBy: req.user._id }).select("_id")
     const shareIds = shares.map(share => share._id)
 
+    // Handle case when user has no shares
     if (shareIds.length === 0) {
         return res.status(200).json({
             success: true,
@@ -183,28 +184,32 @@ const getOverviewAnalytics = asyncHandler(async (req, res) => {
         })
     }
 
-    // Get all logs for user's shares
-    const logs = await ActivityLog.find({ shareId: { $in: shareIds } })
+    // Get aggregated analytics for ALL shares in one call
+    const analytics = await logService.getShareAnalytics(shareIds)
 
-    const analytics = {
-        totalShares: shares.length,
-        totalAccess: logs.length,
-        totalViews: logs.filter(log => log.action === "view").length,
-        totalDownloads: logs.filter(log => log.action === "download").length,
-        uniqueUsers: [...new Set(logs.map(log => log.accessedBy.toString()))].length,
-        recentActivity: logs.slice(0, 10).map(log => ({
-            action: log.action,
-            timestamp: log.createdAt,
-            shareId: log.shareId
-        }))
-    }
+    // Get recent activity for the overview
+    const recentLogs = await ActivityLog.find({ shareId: { $in: shareIds } })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .select('action createdAt shareId')
 
+    // Build response
     res.status(200).json({
         success: true,
-        data: analytics
+        data: {
+            totalShares: shares.length,
+            totalAccess: analytics.totalAccess,
+            totalViews: analytics.totalViews,
+            totalDownloads: analytics.totalDownloads,
+            uniqueUsers: analytics.uniqueUsers,
+            recentActivity: recentLogs.map(log => ({
+                action: log.action,
+                timestamp: log.createdAt,
+                shareId: log.shareId
+            }))
+        }
     })
 })
-
 
 /**
  * @desc    Export logs to CSV format

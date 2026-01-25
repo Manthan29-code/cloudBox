@@ -51,7 +51,7 @@ app.use("/user" , userRouter)
 app.use("/folder", folderRouter)
 app.use("/file", fileRouter)
 app.use("/shares", shareRouter)
-app.use("/logs", shareRouter)
+app.use("/logs", logsRouter)
 // app.use(pdfProxyRouter)
 app.use(globalErrorHandler)
 
