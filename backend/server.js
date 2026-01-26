@@ -25,7 +25,7 @@ app.use(cors({
 
 app.options("/", cors())             
 app.use(express.json())  
-app.use(cookieParser()); 
+app.use(cookieParser())
 
 // const MONGO_URI = "mongodb://127.0.0.1:27017/my_database_name"
 const PORT = process.env.PORT || 5000;
