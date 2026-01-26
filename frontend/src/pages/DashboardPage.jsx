@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getRootFolders, getFolderContents, createFolder, deleteFolder, updateFolder, setCurrentFolder } from '../store/slices/folderSlice';
 import { getFilesByFolder, deleteFile, updateFile, uploadFile, clearFiles } from '../store/slices/fileSlice';
+import { getMyShares, getSharedWithMe } from '../store/slices/shareSlice';
 // import Navbar from '../components/Navbar';
 import CreateFolderModal from '../components/CreateFolderModal';
 import UploadFileModal from '../components/UploadFileModal';
@@ -13,11 +14,10 @@ import Toolbar from '../components/dashboard/Toolbar';
 import EmptyState from '../components/dashboard/EmptyState';
 import StatsModal from '../components/dashboard/StatsModal';
 import ContextMenu from '../components/dashboard/ContextMenu';
-import {
-    FaFolder, FaFolderOpen, FaPlus, FaTrash, FaPen, FaEllipsisV,
-    FaHome, FaChevronRight, FaGlobe, FaFile, FaFileImage,
-    FaFilePdf, FaFileWord, FaFileExcel, FaDownload, FaCloudUploadAlt, FaChartPie, FaTimes
-} from 'react-icons/fa';
+import FolderGrid from '../components/dashboard/FolderGrid';
+import FileGrid from '../components/dashboard/FileGrid';
+import ShareList from '../components/dashboard/ShareList';
+import ShareModal from '../components/dashboard/ShareModal';
 import { useForm } from 'react-hook-form';
 
 const DashboardPage = () => {
@@ -33,16 +33,21 @@ const DashboardPage = () => {
     // File State
     const { files, isLoading: isFileLoading, error: fileError } = useSelector((state) => state.file);
 
+    // Share State
+    const { myShares, sharedWithMe, isLoading: isShareLoading } = useSelector((state) => state.share);
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const [isFilePreviewOpen, setIsFilePreviewOpen] = useState(false);
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false); // Mobile Stats modal
-    const [activeView, setActiveView] = useState('files'); // 'files' | 'stats'
+    const [activeView, setActiveView] = useState('files'); // 'files' | 'stats' | 'my-shares' | 'shared-with-me'
     const [previewFile, setPreviewFile] = useState(null);
 
+    // Share Modal State
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [shareResource, setShareResource] = useState(null); // { resourceId, resourceType }
+
     // Context Menu State: { id, type: 'folder' | 'file', x, y }
-
-
     const [contextMenu, setContextMenu] = useState(null);
     const [renamingId, setRenamingId] = useState(null); // format: { type: 'folder'|'file', id: string }
 
@@ -56,21 +61,25 @@ const DashboardPage = () => {
         }
     }, [user, navigate]);
 
-    // Fetch Data
+    // Fetch Data based on Active View and Folder ID
     useEffect(() => {
         if (user) {
-            if (folderId) {
-                dispatch(getFolderContents(folderId));
-                dispatch(getFilesByFolder(folderId));
-                setActiveView('files'); // Reset view when navigating to a folder
-            } else {
-                dispatch(getRootFolders()); // Restore root folder fetching
-                dispatch(setCurrentFolder(null));
-                dispatch(clearFiles());
-                // dispatch(getFilesByFolder(null)); // Fetch files at root
+            if (activeView === 'files') {
+                if (folderId) {
+                    dispatch(getFolderContents(folderId));
+                    dispatch(getFilesByFolder(folderId));
+                } else {
+                    dispatch(getRootFolders()); // Restore root folder fetching
+                    dispatch(setCurrentFolder(null));
+                    dispatch(clearFiles());
+                }
+            } else if (activeView === 'my-shares') {
+                dispatch(getMyShares());
+            } else if (activeView === 'shared-with-me') {
+                dispatch(getSharedWithMe());
             }
         }
-    }, [dispatch, folderId, user]);
+    }, [dispatch, folderId, user, activeView]);
 
 
     if (!user) return null;
@@ -86,6 +95,7 @@ const DashboardPage = () => {
     const handleNavigate = (folder) => {
         dispatch(setCurrentFolder(folder));
         navigate(`/dashboard/${folder._id}`);
+        setActiveView('files');
     };
 
     const handleDelete = (e, targetId, type) => {
@@ -144,6 +154,20 @@ const DashboardPage = () => {
         setContextMenu(null);
     };
 
+    const handleShare = (e, item, type) => {
+        e.stopPropagation();
+        setShareResource({
+            resourceId: item._id,
+            resourceType: type
+        });
+        setIsShareModalOpen(true);
+        setContextMenu(null);
+    };
+
+    const handleAccessShare = (shareId) => {
+        navigate(`/shares/${shareId}`);
+    };
+
     const openContextMenu = (e, id, type) => {
         e.preventDefault();
         e.stopPropagation();
@@ -161,7 +185,7 @@ const DashboardPage = () => {
 
     // Breadcrumbs
     let breadcrumbs = [];
-    if (folderId) {
+    if (folderId && activeView === 'files') {
         if (currentFolder && currentFolder.path) {
             breadcrumbs = [...currentFolder.path, { _id: currentFolder._id, name: currentFolder.name }];
         } else if (folders.length > 0 && folders[0].path) {
@@ -169,19 +193,10 @@ const DashboardPage = () => {
         }
     }
 
-    const getFileIcon = (mimeType) => {
-        if (mimeType?.startsWith('image/')) return <FaFileImage className="text-4xl text-purple-600 group-hover:scale-110 transition-transform" />;
-        if (mimeType === 'application/pdf') return <FaFilePdf className="text-4xl text-red-500 group-hover:scale-110 transition-transform" />;
-        if (mimeType?.includes('word')) return <FaFileWord className="text-4xl text-blue-500 group-hover:scale-110 transition-transform" />;
-        if (mimeType?.includes('excel') || mimeType?.includes('spreadsheet')) return <FaFileExcel className="text-4xl text-green-500 group-hover:scale-110 transition-transform" />;
-        return <FaFile className="text-4xl text-gray-400 group-hover:scale-110 transition-transform" />;
-    };
-
-    const isLoading = isFolderLoading || (folderId && isFileLoading);
+    const isLoading = isFolderLoading || (folderId && isFileLoading) || isShareLoading;
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-
             <div className="flex flex-1 container mx-auto px-4 py-6 gap-6">
 
                 {/* Sidebar */}
@@ -193,28 +208,37 @@ const DashboardPage = () => {
                 />
 
                 {/* Main Content */}
-
                 <main className="flex-1 flex flex-col min-w-0">
 
                     {/* Toolbar */}
-                    <Toolbar
-                        breadcrumbs={breadcrumbs}
-                        folderId={folderId}
-                        setIsUploadModalOpen={setIsUploadModalOpen}
-                        setIsCreateModalOpen={setIsCreateModalOpen}
-                        setIsStatsModalOpen={setIsStatsModalOpen}
-                    />
+                    {activeView === 'files' && (
+                        <Toolbar
+                            breadcrumbs={breadcrumbs}
+                            folderId={folderId}
+                            setIsUploadModalOpen={setIsUploadModalOpen}
+                            setIsCreateModalOpen={setIsCreateModalOpen}
+                            setIsStatsModalOpen={setIsStatsModalOpen}
+                        />
+                    )}
+
+                    {/* Headers for other views */}
+                    {activeView === 'my-shares' && <h1 className="text-2xl font-bold mb-4">My Shares</h1>}
+                    {activeView === 'shared-with-me' && <h1 className="text-2xl font-bold mb-4">Shared with Me</h1>}
+                    {activeView === 'stats' && <h1 className="text-2xl font-bold mb-4">Storage Analysis</h1>}
+
 
                     {/* Content Area */}
-
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex-1 min-h-[500px]">
                         {activeView === 'stats' ? (
                             <div className="h-full w-full">
-                                <h2 className="text-xl font-bold mb-6">Storage Analysis</h2>
                                 <div className="h-full">
                                     <FileStats />
                                 </div>
                             </div>
+                        ) : activeView === 'my-shares' ? (
+                            <ShareList shares={myShares} type="my-shares" />
+                        ) : activeView === 'shared-with-me' ? (
+                            <ShareList shares={sharedWithMe} type="shared-with-me" onAccess={handleAccessShare} />
                         ) : (
                             <>
                                 {isLoading && folders.length === 0 && files.length === 0 ? (
@@ -234,102 +258,28 @@ const DashboardPage = () => {
                                     />
                                 ) : (
                                     <div className="space-y-8">
-
-                                        {/* Folders Section */}
                                         {folders.length > 0 && (
-                                            <div>
-                                                <h2 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-4 px-1">Folders</h2>
-                                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                                                    {folders.map((folder) => (
-                                                        <div
-                                                            key={folder._id}
-                                                            onClick={() => handleNavigate(folder)}
-                                                            onContextMenu={(e) => openContextMenu(e, folder._id, 'folder')}
-                                                            className="group relative p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all cursor-pointer flex flex-col items-center text-center bg-white"
-                                                        >
-                                                            <div className="text-gray-800 mb-3 transform group-hover:scale-110 transition-transform">
-                                                                <FaFolder size={48} />
-                                                            </div>
-
-                                                            {renamingId && renamingId.type === 'folder' && renamingId.id === folder._id ? (
-                                                                <form onSubmit={handleSubmit(submitRename)} onClick={(e) => e.stopPropagation()} className="w-full">
-                                                                    <input
-                                                                        {...register('name', { required: true })}
-                                                                        className="w-full text-center text-sm border-b border-black focus:outline-none bg-transparent"
-                                                                        onBlur={() => setRenamingId(null)}
-                                                                        autoFocus
-                                                                    />
-                                                                </form>
-                                                            ) : (
-                                                                <h3 className="text-gray-700 font-medium text-sm truncate w-full px-2 mt-1 flex items-center justify-center gap-1" title={folder.name}>
-                                                                    {folder.isPublic && <FaGlobe className="text-gray-400 text-xs flex-shrink-0" title="Public" />}
-                                                                    <span className="truncate">{folder.name}</span>
-                                                                </h3>
-                                                            )}
-                                                            <button
-                                                                onClick={(e) => openContextMenu(e, folder._id, 'folder')}
-                                                                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-gray-200"
-                                                            >
-                                                                <FaEllipsisV size={12} />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                            <FolderGrid
+                                                folders={folders}
+                                                onNavigate={handleNavigate}
+                                                onContextMenu={openContextMenu}
+                                                renamingId={renamingId}
+                                                submitRename={handleSubmit(submitRename)}
+                                                register={register}
+                                                setRenamingId={setRenamingId}
+                                            />
                                         )}
 
-                                        {/* Files Section */}
                                         {files.length > 0 && (
-                                            <div>
-                                                <h2 className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-4 px-1">Files</h2>
-                                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                                                    {files.map((file) => (
-                                                        <div
-                                                            key={file._id}
-                                                            onClick={() => handleFileClick(file)}
-                                                            onContextMenu={(e) => openContextMenu(e, file._id, 'file')}
-                                                            className="group relative p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all cursor-pointer flex flex-col items-center text-center bg-white"
-                                                        >
-                                                            {/* File Preview / Icon */}
-                                                            <div className="h-16 mb-3 flex items-center justify-center w-full overflow-hidden rounded-lg bg-gray-50">
-                                                                {file.mimeType?.startsWith('image/') ? (
-                                                                    <img src={file.cloudUrl} alt={file.originalName} className="h-full w-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
-                                                                ) : (
-                                                                    getFileIcon(file.mimeType)
-                                                                )}
-                                                            </div>
-
-                                                            {renamingId && renamingId.type === 'file' && renamingId.id === file._id ? (
-                                                                <form onSubmit={handleSubmit(submitRename)} onClick={(e) => e.stopPropagation()} className="w-full">
-                                                                    <input
-                                                                        {...register('name', { required: true })}
-                                                                        className="w-full text-center text-sm border-b border-black focus:outline-none bg-transparent"
-                                                                        onBlur={() => setRenamingId(null)}
-                                                                        autoFocus
-                                                                    />
-                                                                </form>
-                                                            ) : (
-                                                                <div className="w-full px-1">
-                                                                    <h3 className="text-gray-900 font-medium text-sm truncate w-full" title={file.originalName}>
-                                                                        {file.originalName}
-                                                                    </h3>
-                                                                    <p className="text-xs text-gray-500 mt-1 flex items-center justify-center gap-2">
-                                                                        <span>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
-                                                                        {file.isPublic && <FaGlobe className="text-gray-400" title="Public" />}
-                                                                    </p>
-                                                                </div>
-                                                            )}
-
-                                                            <button
-                                                                onClick={(e) => openContextMenu(e, file._id, 'file')}
-                                                                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-gray-200 bg-white/80"
-                                                            >
-                                                                <FaEllipsisV size={12} />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
+                                            <FileGrid
+                                                files={files}
+                                                onFileClick={handleFileClick}
+                                                onContextMenu={openContextMenu}
+                                                renamingId={renamingId}
+                                                submitRename={handleSubmit(submitRename)}
+                                                register={register}
+                                                setRenamingId={setRenamingId}
+                                            />
                                         )}
                                     </div>
                                 )}
@@ -338,7 +288,6 @@ const DashboardPage = () => {
                     </div>
                 </main>
             </div>
-
 
             {/* Modals */}
             <CreateFolderModal
@@ -366,6 +315,13 @@ const DashboardPage = () => {
                 file={previewFile}
             />
 
+            <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                resourceId={shareResource?.resourceId}
+                resourceType={shareResource?.resourceType}
+            />
+
             {/* Context Menu */}
             <ContextMenu
                 contextMenu={contextMenu}
@@ -375,6 +331,7 @@ const DashboardPage = () => {
                 startRenaming={startRenaming}
                 handleToggleVisibility={handleToggleVisibility}
                 handleDelete={handleDelete}
+                handleShare={handleShare}
             />
         </div>
     );

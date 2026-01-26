@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaDownload, FaPen, FaGlobe, FaTrash } from 'react-icons/fa';
+import { FaDownload, FaPen, FaGlobe, FaTrash, FaShareAlt } from 'react-icons/fa';
 
 const ContextMenu = ({
     contextMenu,
@@ -8,7 +8,8 @@ const ContextMenu = ({
     handleDownload,
     startRenaming,
     handleToggleVisibility,
-    handleDelete
+    handleDelete,
+    handleShare
 }) => {
     if (!contextMenu) return null;
 
@@ -27,6 +28,13 @@ const ContextMenu = ({
                     <FaDownload className="text-gray-400" /> Download
                 </button>
             )}
+
+            <button
+                onClick={(e) => handleShare(e, item, contextMenu.type)}
+                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+            >
+                <FaShareAlt className="text-gray-400" /> Share
+            </button>
 
             <button
                 onClick={(e) => startRenaming(e, item, contextMenu.type)}

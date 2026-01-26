@@ -2,6 +2,7 @@
 api.md
 folderApi.md
 fileApi.md
+fileShareApi.md
 *.txt
 logs
 *.log

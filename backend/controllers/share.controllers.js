@@ -171,9 +171,14 @@ const accessSharedResource = asyncHandler(async (req, res) => {
         userAgent: req.headers['user-agent']
     })
 
+<<<<<<< HEAD
     //TODO: Fetch actual resource data
     const resource = await File.findById(share.resourceId)
     if(!resource){
+=======
+    const resource = await File.findById(share.resourceId)
+    if (!resource) {
+>>>>>>> fileShare
         const error = new Error("resource you want to access is not available or removed by owner")
         error.statusCode = 403
         throw error
