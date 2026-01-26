@@ -3,7 +3,7 @@ const File = require("../models/files.model")
 const asyncHandler = require("../middleware/asyncHandler")
 const User = require("../models/user.model")
 const jwt = require("jsonwebtoken")
-// const crypto = require("crypto")
+const crypto = require("crypto")
 const logService = require("../utils/logs.service")
 
 
@@ -43,7 +43,7 @@ const createShare = asyncHandler(async (req, res) => {
     }
 
     // TODO: Verify user owns the resource ( currently  we are focusing only on  to make file as sharable )
-    const resource = await File.findOne({ _id: resourceId, createdBy: req.user._id })
+    const resource = await File.findOne({ _id: resourceId, owner: req.user._id })
     if (!resource){
         const error = new Error(" you are  not owner of resource ")
         error.statusCode = 400
@@ -105,15 +105,14 @@ const createShare = asyncHandler(async (req, res) => {
     })
 
     // Generate public URL
-    const baseUrl = process.env.BASE_URL || "http://localhost:3000" // it is url on that your backend is running
-    const shareUrl = `${baseUrl}/public/${share._id}`
+    // const baseUrl = process.env.BASE_URL || "http://localhost:3000" // it is url on that your backend is running
+    // const shareUrl = `${baseUrl}/public/${share._id}`
 
     res.status(201).json({
         success: true,
         message: "Share created successfully",
         data: {
             shareId: share._id,
-            shareUrl,
             token: jwtToken,
             allocatedTo: share.allocatedTo,
             expiresAt: share.expiresAt,
@@ -172,9 +171,13 @@ const accessSharedResource = asyncHandler(async (req, res) => {
         userAgent: req.headers['user-agent']
     })
 
-    // TODO: Fetch actual resource data
-    //const resource = await File.findById(share.resourceId)
+    const resource = await File.findById(share.resourceId)
+    if (!resource) {
+        const error = new Error("resource you want to access is not available or removed by owner")
+        error.statusCode = 403
+        throw error
 
+    }
 
     res.status(200).json({
         success: true,
@@ -182,7 +185,7 @@ const accessSharedResource = asyncHandler(async (req, res) => {
         data: {
             shareId: share._id,
             resourceId: share.resourceId, // id of shared resource 
-            cloudURL: share.resourceId.cloudUrl, // url of resource 
+            cloudURL: resource.cloudUrl, // url of resource 
             resourceType: share.resourceType,
             permissions: share.permissions,
             createdBy: share.createdBy,
@@ -249,9 +252,13 @@ const downloadSharedResource = asyncHandler(async (req, res) => {
         userAgent: req.headers['user-agent']
     })
 
-    // TODO: Implement actual file streaming
-    // const filePath = path.join(__dirname, '../uploads', resource.filename)
-    // res.download(filePath)
+    const resource = await File.findById(share.resourceId)
+    if (!resource) {
+        const error = new Error("resource you want to access is not available or removed by owner")
+        error.statusCode = 403
+        throw error
+
+    }
 
     res.status(200).json({
         success: true,
@@ -259,7 +266,7 @@ const downloadSharedResource = asyncHandler(async (req, res) => {
         data: {
             resourceId: share.resourceId,
             resourceType: share.resourceType , 
-            downloadURL: share.resourceId.cloudUrl, // url of resource  that will provide access to do download
+            downloadURL: resource.cloudUrl, // url of resource  that will provide access to do download
         }
     })
 })

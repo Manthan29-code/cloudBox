@@ -90,8 +90,28 @@ const logout = asyncHandler( async (req, res ) => {
 })
 
 const getAllUsers = asyncHandler(async (req, res) => {
-    const users = await User.find().select("-password")
-    res.status(201).json({ success: true, data: users })
+    const { search } = req.query
+
+    if (!search) {
+        return res.status(200).json({
+            success: true,
+            data: []
+        })
+    }
+
+    const users = await User.find({
+        $or: [
+            { name: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } }
+        ]
+    })
+        .select("_id name email")
+        .limit(10)
+
+    res.status(200).json({
+        success: true,
+        data: users
+    })
 })
 
 

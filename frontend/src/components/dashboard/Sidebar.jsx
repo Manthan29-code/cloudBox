@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaHome, FaChartPie, FaFolderOpen } from 'react-icons/fa';
+import { FaHome, FaChartPie, FaFolderOpen, FaShareAlt, FaUserFriends } from 'react-icons/fa';
 
 const Sidebar = ({ activeView, setActiveView, folderId, navigate }) => {
     return (
@@ -20,9 +20,19 @@ const Sidebar = ({ activeView, setActiveView, folderId, navigate }) => {
                         <FaChartPie /> Storage Analysis
                     </button>
 
-                    <div className="px-4 py-3 text-gray-400 text-sm font-medium flex items-center gap-3 cursor-not-allowed">
-                        <span className="w-5 flex justify-center"><FaFolderOpen /></span> Shared (Coming Soon)
-                    </div>
+                    <button
+                        onClick={() => setActiveView('shared-with-me')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-left ${activeView === 'shared-with-me' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                        <FaUserFriends /> Shared with Me
+                    </button>
+
+                    <button
+                        onClick={() => setActiveView('my-shares')}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-left ${activeView === 'my-shares' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                        <FaShareAlt /> My Shares
+                    </button>
                 </div>
             </div>
         </aside>

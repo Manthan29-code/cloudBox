@@ -14,12 +14,14 @@ import { combineReducers } from 'redux';
 import authReducer from './slices/authSlice';
 import folderReducer from './slices/folderSlice';
 import fileReducer from './slices/fileSlice';
+import shareReducer from './slices/shareSlice';
 
 // Combine all reducers
 const rootReducer = combineReducers({
   auth: authReducer,
   folder: folderReducer,
   file: fileReducer,
+  share: shareReducer,
 });
 
 // Persist configuration
