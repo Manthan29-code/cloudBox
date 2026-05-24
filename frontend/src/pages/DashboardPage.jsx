@@ -82,7 +82,6 @@ const DashboardPage = () => {
     }, [dispatch, folderId, user, activeView]);
 
 
-    if (!user) return null;
 
     const handleCreateFolder = (data) => {
         dispatch(createFolder(data));
@@ -182,6 +181,8 @@ const DashboardPage = () => {
         window.addEventListener('click', handleClick);
         return () => window.removeEventListener('click', handleClick);
     }, [renamingId]);
+
+    if (!user) return null;
 
     // Breadcrumbs
     let breadcrumbs = [];
